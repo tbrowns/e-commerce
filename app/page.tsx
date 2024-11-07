@@ -1,101 +1,123 @@
-import Image from "next/image";
+// This file defines a React component for displaying featured products in a product catalog.
+// It uses Next.js and Supabase for data fetching and rendering.
 
-export default function Home() {
+"use client"; // Indicates that this component is a client component in Next.js
+import Link from "next/link"; // Importing Link component for client-side navigation
+import { Button } from "@/components/ui/button"; // Importing a custom Button component
+import { ArrowRight } from "lucide-react"; // Importing an icon for the button
+
+import { useEffect, useState } from "react"; // Importing React hooks for state and lifecycle management
+import { supabase } from "@/lib/supabase"; // Importing Supabase client for database interactions
+import Image from "next/image"; // Importing Next.js Image component for optimized image loading
+import { SkeletonProductCard } from "@/components/shared/loading_cards"; // Importing a loading skeleton component
+
+// Defining the Product interface to type-check product objects
+interface Product {
+  id: string; // Unique identifier for the product
+  name: string; // Name of the product
+  description: string; // Description of the product
+  price: number; // Price of the product
+  category: string; // Category to which the product belongs
+  image_url: string; // URL of the product image
+}
+
+// Defining the FeaturedProducts functional component
+const FeaturedProducts = () => {
+  // State to hold the list of products
+  const [products, setProducts] = useState<Product[]>([]);
+  // State to manage loading status
+  const [loading, setLoading] = useState(true);
+
+  // Function to fetch products from the Supabase database
+  const fetchProducts = async () => {
+    setLoading(true); // Set loading to true before fetching data
+
+    // Fetching products from the "products" table in Supabase
+    const { data, error } = await supabase.from("products").select("*");
+    if (error) {
+      console.log(error); // Log any errors that occur during fetching
+      setLoading(false); // Set loading to false if there's an error
+      return; // Exit the function if there's an error
+    }
+
+    // Shuffle the products array and take the first 4 items
+    const shuffledProducts = data.sort(() => Math.random() - 0.5);
+    setProducts(shuffledProducts.slice(0, 4)); // Update state with the first 4 shuffled products
+    setLoading(false); // Set loading to false after fetching data
+  };
+
+  // useEffect hook to fetch products when the component mounts
+  useEffect(() => {
+    fetchProducts(); // Call the fetchProducts function
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Rendering the component
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
+    <div className="flex flex-col py-2 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col sm:flex-row justify-between items-center w-full mb-6">
+        <p className="text-3xl font-bold max-w-2xl leading-tight mb-4 sm:mb-0">
+          Manage your products with ease using our powerful catalog system.
+          Create, update, and organize your inventory efficiently.
+        </p>
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+          src="/product-catalogue.png" // Image source
+          alt="Product Catalogue" // Alt text for accessibility
+          width={200} // Width of the image
+          height={100} // Height of the image
+          className="hidden sm:block rounded-md shadow-sm" // CSS classes for styling
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      <div className="text-center">
+        <h2 className="mt-6 text-2xl font-bold tracking-tight text-foreground">
+          Featured Products
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          Check out our most popular products
+        </p>
+
+        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {loading && <SkeletonProductCard length={4} />}
+          {products.map(
+            (
+              product // Map over the products array to render each product
+            ) => (
+              <div
+                key={product.id} // Unique key for each product
+                className="bg-card rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300" // CSS classes for styling
+              >
+                <div className="aspect-square relative">
+                  <Image
+                    layout="fill" // Fill the parent container
+                    src={product.image_url} // Product image URL
+                    alt={product.name} // Alt text for accessibility
+                    className="object-cover w-full h-full rounded-lg" // CSS classes for styling
+                  />
+                </div>
+                <h3 className="text-lg font-bold mt-3 truncate">
+                  {product.name}
+                </h3>
+                <p className="text-muted-foreground mt-1 truncate">
+                  {product.description}
+                </p>
+                <p className="text-lg font-bold mt-3">Ksh.{product.price}</p>
+              </div>
+            )
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="mt-8 w-full flex justify-center">
+          <Button asChild>
+            <Link href="/products" className="flex items-center">
+              Browse All Products
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+// Exporting the FeaturedProducts component for use in other parts of the application
+export default FeaturedProducts;
