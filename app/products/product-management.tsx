@@ -39,7 +39,7 @@ export function AddProduct({
   defaultValues = {
     name: "",
     description: "",
-    price: "",
+    price: 0,
     category: "",
     image_url:
       "https://images.unsplash.com/photo-1606786013940-3f5e1c3c7d1a?auto=format&fit=crop&w=800",
@@ -48,7 +48,7 @@ export function AddProduct({
   defaultValues?: {
     name: string;
     description: string;
-    price: string;
+    price: number;
     category: string;
     image_url: string;
   };
@@ -66,7 +66,7 @@ export function AddProduct({
   const handleSubmit = async (values: {
     name: string;
     description: string;
-    price: string;
+    price: number;
     category: string;
     image_url: string;
   }) => {
@@ -85,7 +85,7 @@ export function AddProduct({
         {
           name: values.name,
           description: values.description,
-          price: parseFloat(values.price),
+          price: values.price,
           category: values.category,
           image_url: values.image_url,
         },
@@ -160,7 +160,7 @@ export function UpdateProduct({
     id: string;
     name: string;
     description: string;
-    price: string;
+    price: number;
     category: string;
     image_url: string;
   }) => {
@@ -169,25 +169,26 @@ export function UpdateProduct({
      * the list and updating the product that matches the id of the product
      * being updated.
      */
-    setProducts((prevProducts: Product[]) => {
-      return prevProducts.map((p: Product) => {
-        if (p.id === product.id) {
-          /**
-           * If the product matches the id of the product being updated, then
-           * update the product with the new values.
-           */
-          return {
-            ...p,
-            ...values,
-          };
-        }
-        /**
-         * If the product does not match the id of the product being updated,
-         * then return the product as is.
-         */
-        return p;
-      });
+
+    // Fetch the current list of products
+    const { data: prevProducts, error: ProductError } = await supabase
+      .from("products")
+      .select("*");
+
+    if (ProductError) {
+      console.error("Error fetching products:", ProductError.message);
+      return;
+    }
+    const updatedProducts = prevProducts.map((p: Product) => {
+      if (p.id === product.id) {
+        return {
+          ...p,
+          ...values,
+        };
+      }
+      return p;
     });
+    setProducts(updatedProducts);
 
     /**
      * Update the product in the database using the Supabase client.
@@ -228,10 +229,11 @@ export function UpdateProduct({
           </DialogDescription>
         </DialogHeader>
         <ProductForm
-          onSubmit={handleSubmit}
+          onSubmit={() => {
+            handleSubmit({ ...product });
+          }}
           defaultValues={{
             ...product,
-            price: product.price.toString(),
           }}
         />
       </DialogContent>
@@ -264,7 +266,7 @@ import { toast } from "@/hooks/use-toast";
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Must be a valid price"),
+  price: z.number(),
   category: z.string().min(1, "Please select a category"),
   image_url: z.string().url("Must be a valid URL"),
 });
