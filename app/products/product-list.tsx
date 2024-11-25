@@ -10,12 +10,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash } from "lucide-react";
+
 
 import { supabase } from "@/lib/supabase";
-import { UpdateProduct } from "./product-management";
 
 import { SkeletonProductCard } from "@/components/shared/loading_cards";
+import { useCart } from "@/components/shared/cart-provider";
 
 interface Product {
   id: string;
@@ -24,6 +24,7 @@ interface Product {
   price: number;
   category: string;
   image_url: string;
+  vendor_id: string;
 }
 
 export function ProductList({
@@ -31,6 +32,8 @@ export function ProductList({
 }: {
   filters: { search: string; category: string };
 }) {
+  const { addToCart } = useCart();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
 
@@ -73,15 +76,6 @@ export function ProductList({
     setLoading(false);
   };
 
-  const deleteProduct = async (id: string) => {
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) {
-      console.error("Error deleting product:", error.message);
-      return;
-    }
-
-    setProducts((prevProducts) => prevProducts.filter((p) => p.id !== id));
-  };
 
   useEffect(() => {
     fetchProducts();
@@ -115,13 +109,11 @@ export function ProductList({
             </div>
           </CardContent>
           <CardFooter className="p-4 pt-0 flex justify-between">
-            <UpdateProduct product={product} setProducts={setProducts} />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => deleteProduct(product.id)}
+            <Button 
+              className="w-full"
+              onClick={() => addToCart({ id: product.id, name: product.name, price: product.price, quantity: 1, vendor_id: product.vendor_id })}
             >
-              <Trash className="h-4 w-4" />
+              Add to Cart
             </Button>
           </CardFooter>
         </Card>

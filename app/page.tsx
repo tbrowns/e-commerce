@@ -1,57 +1,39 @@
-// This file defines a React component for displaying featured products in a product catalog.
-// It uses Next.js and Supabase for data fetching and rendering.
+import { supabase } from "@/lib/supabase";
+import { ProductGrid } from "@/components/shared/FeaturedProductGrid";
+import Image from "next/image";
 
-"use client"; // Indicates that this component is a client component in Next.js
-import Link from "next/link"; // Importing Link component for client-side navigation
-import { Button } from "@/components/ui/button"; // Importing a custom Button component
-import { ArrowRight } from "lucide-react"; // Importing an icon for the button
+import { currentUser } from "@clerk/nextjs/server";
 
-import { useEffect, useState } from "react"; // Importing React hooks for state and lifecycle management
-import { supabase } from "@/lib/supabase"; // Importing Supabase client for database interactions
-import Image from "next/image"; // Importing Next.js Image component for optimized image loading
-import { SkeletonProductCard } from "@/components/shared/loading_cards"; // Importing a loading skeleton component
+// Making the main component async for server-side data fetching
+async function FeaturedProducts() {
+  const user = await currentUser();
 
-// Defining the Product interface to type-check product objects
-interface Product {
-  id: string; // Unique identifier for the product
-  name: string; // Name of the product
-  description: string; // Description of the product
-  price: number; // Price of the product
-  category: string; // Category to which the product belongs
-  image_url: string; // URL of the product image
-}
+  if (!user) {
+    return <div>Please log in to access this page.</div>;
+  }
 
-// Defining the FeaturedProducts functional component
-const FeaturedProducts = () => {
-  // State to hold the list of products
-  const [products, setProducts] = useState<Product[]>([]);
-  // State to manage loading status
-  const [loading, setLoading] = useState(true);
+  const { error: userError } = await supabase
+    .from("users")
+    .upsert({
+      id: user.id,
+      username: user.username,
+      email: user.emailAddresses[0].emailAddress,
+    })
+    .select();
 
-  // Function to fetch products from the Supabase database
-  const fetchProducts = async () => {
-    setLoading(true); // Set loading to true before fetching data
+  console.error("Error inserting UserData:", userError);
 
-    // Fetching products from the "products" table in Supabase
-    const { data, error } = await supabase.from("products").select("*");
-    if (error) {
-      console.log(error); // Log any errors that occur during fetching
-      setLoading(false); // Set loading to false if there's an error
-      return; // Exit the function if there's an error
-    }
+  // Fetch products directly without useState or useEffect
+  const { data: products, error } = await supabase.from("products").select("*");
 
-    // Shuffle the products array and take the first 4 items
-    const shuffledProducts = data.sort(() => Math.random() - 0.5);
-    setProducts(shuffledProducts.slice(0, 4)); // Update state with the first 4 shuffled products
-    setLoading(false); // Set loading to false after fetching data
-  };
+  if (error) {
+    console.error(error);
+    return <div>Error loading products</div>;
+  }
 
-  // useEffect hook to fetch products when the component mounts
-  useEffect(() => {
-    fetchProducts(); // Call the fetchProducts function
-  }, []); // Empty dependency array means this runs once on mount
+  // Shuffle and slice the products server-side
+  const shuffledProducts = products.sort(() => Math.random() - 0.5).slice(0, 4);
 
-  // Rendering the component
   return (
     <div className="flex flex-col py-2 px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row justify-between items-center w-full mb-6">
@@ -60,11 +42,11 @@ const FeaturedProducts = () => {
           Create, update, and organize your inventory efficiently.
         </p>
         <Image
-          src="/product-catalogue.png" // Image source
-          alt="Product Catalogue" // Alt text for accessibility
-          width={200} // Width of the image
-          height={100} // Height of the image
-          className="hidden sm:block rounded-md shadow-sm" // CSS classes for styling
+          src="/product-catalogue.png"
+          alt="Product Catalogue"
+          width={200}
+          height={100}
+          className="hidden sm:block rounded-md shadow-sm"
         />
       </div>
 
@@ -76,48 +58,11 @@ const FeaturedProducts = () => {
           Check out our most popular products
         </p>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {loading && <SkeletonProductCard length={4} />}
-          {products.map(
-            (
-              product // Map over the products array to render each product
-            ) => (
-              <div
-                key={product.id} // Unique key for each product
-                className="bg-card rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300" // CSS classes for styling
-              >
-                <div className="aspect-square relative">
-                  <Image
-                    layout="fill" // Fill the parent container
-                    src={product.image_url} // Product image URL
-                    alt={product.name} // Alt text for accessibility
-                    className="object-cover w-full h-full rounded-lg" // CSS classes for styling
-                  />
-                </div>
-                <h3 className="text-lg font-bold mt-3 truncate">
-                  {product.name}
-                </h3>
-                <p className="text-muted-foreground mt-1 truncate">
-                  {product.description}
-                </p>
-                <p className="text-lg font-bold mt-3">Ksh.{product.price}</p>
-              </div>
-            )
-          )}
-        </div>
-
-        <div className="mt-8 w-full flex justify-center">
-          <Button asChild>
-            <Link href="/products" className="flex items-center">
-              Browse All Products
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-        </div>
+        {/* Pass the products to the client component */}
+        <ProductGrid products={shuffledProducts} />
       </div>
     </div>
   );
-};
+}
 
-// Exporting the FeaturedProducts component for use in other parts of the application
 export default FeaturedProducts;

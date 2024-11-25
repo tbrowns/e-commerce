@@ -19,8 +19,10 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  inventory: number;
   category: string;
   image_url: string;
+  vendor_id: string;
 }
 
 /**
@@ -40,6 +42,7 @@ export function AddProduct({
     name: "",
     description: "",
     price: 0,
+    inventory: 1,
     category: "",
     image_url:
       "https://images.unsplash.com/photo-1606786013940-3f5e1c3c7d1a?auto=format&fit=crop&w=800",
@@ -49,11 +52,13 @@ export function AddProduct({
     name: string;
     description: string;
     price: number;
+    inventory: number;
     category: string;
     image_url: string;
   };
 }) {
   const [open, setOpen] = useState(false);
+  const { user } = useUser();
 
   /**
    * handleSubmit is the onSubmit handler for the ProductForm component.
@@ -67,6 +72,7 @@ export function AddProduct({
     name: string;
     description: string;
     price: number;
+    inventory: number;
     category: string;
     image_url: string;
   }) => {
@@ -74,7 +80,9 @@ export function AddProduct({
       !values.name ||
       !values.description ||
       !values.price ||
-      !values.category
+      !values.category ||
+      !values.inventory||
+      !user
     ) {
       console.error("Error adding product: missing required fields");
       return;
@@ -88,6 +96,8 @@ export function AddProduct({
           price: values.price,
           category: values.category,
           image_url: values.image_url,
+          inventory: values.inventory,
+          vendor_id: user?.id||""
         },
       ]);
       if (error) {
@@ -163,6 +173,7 @@ export function UpdateProduct({
     price: number;
     category: string;
     image_url: string;
+    inventory: number;
   }) => {
     /**
      * Update the list of products in the parent component by mapping over
@@ -202,6 +213,7 @@ export function UpdateProduct({
           price: values.price,
           category: values.category,
           image_url: values.image_url,
+          inventory: values.inventory,
         },
       ])
       .eq("id", product.id);
@@ -262,11 +274,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { useUser } from "@clerk/nextjs";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   description: z.string().min(10, "Description must be at least 10 characters"),
   price: z.number(),
+  inventory: z.number(),
   category: z.string().min(1, "Please select a category"),
   image_url: z.string().url("Must be a valid URL"),
 });
@@ -365,7 +379,7 @@ export function ProductForm({
         />
 
         {/* Price and category fields */}
-        <div className="grid grid-cols-2 gap-4 ">
+        <div className="grid grid-cols-3 gap-4 ">
           {/* Price field */}
           <FormField
             control={form.control}
@@ -376,6 +390,23 @@ export function ProductForm({
                 <FormControl>
                   {/* Render the input field for the price */}
                   <Input placeholder="99.99" {...field} />
+                </FormControl>
+                {/* Render the error message for the price field */}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Price field */}
+          <FormField
+            control={form.control}
+            name="inventory"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Inventory</FormLabel>
+                <FormControl>
+                  {/* Render the input field for the price */}
+                  <Input placeholder="1" {...field} />
                 </FormControl>
                 {/* Render the error message for the price field */}
                 <FormMessage />
