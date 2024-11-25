@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Store, Sun, Moon, Menu } from "lucide-react";
 
 import { UserButton } from "@clerk/nextjs";
@@ -17,17 +17,9 @@ import { cn } from "@/lib/utils";
 
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "./cart-provider";
-import { useState, useEffect } from "react";
 
 export function Header() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const [loading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    setIsLoading(false);
-  }, [pathname, searchParams, setIsLoading]);
 
   const { cart } = useCart();
   const { setTheme } = useTheme();
@@ -47,17 +39,8 @@ export function Header() {
 
   return (
     <>
-      <div
-        className={`${
-          loading ? `hiddden` : `hidden`
-        }fixed top-0 left-0 w-full h-1 bg-accent z-500`}
-      >
-        <div className="h-full w-1/3 bg-primary animate-loading-bar rounded-full"></div>
-      </div>
       <header
-        className={`sticky ${
-          loading ? `top-1` : `top-0`
-        } z-50 w-full px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}
+        className={`sticky top-0 z-50 w-full px-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60`}
       >
         <div className="container flex justify-around h-16 items-center">
           <Link href="/" className="flex items-center space-x-2 ">
@@ -71,9 +54,6 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => {
-                  setIsLoading(true);
-                }}
                 className={cn(
                   "text-sm font-medium transition-colors hover:text-primary",
                   /* If the current pathname matches the href of the link, make it active. */

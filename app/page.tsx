@@ -21,7 +21,7 @@ async function FeaturedProducts() {
     })
     .select();
 
-  console.error("Error inserting UserData:", userError);
+  if (userError) console.error("Error inserting UserData:", userError);
 
   // Fetch products directly without useState or useEffect
   const { data: products, error } = await supabase.from("products").select("*");
